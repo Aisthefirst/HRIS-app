@@ -9,10 +9,9 @@ import { Card } from '../components/ui/Card';
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
   
   const from = (location.state as any)?.from?.pathname || '/dashboard';
@@ -23,7 +22,6 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
     try {
@@ -31,10 +29,8 @@ export const LoginPage: React.FC = () => {
       if (!success) {
         setError('Invalid email or password');
       }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred. Please try again.');
     }
   };
 
@@ -83,17 +79,19 @@ export const LoginPage: React.FC = () => {
 
             <Button
               type="submit"
-              loading={loading}
+              loading={isLoading}
               className="w-full"
               size="lg"
             >
               Sign In
             </Button>
 
-            <div className="text-center">
-              <p className="text-sm text-neutral-600">
-                Demo credentials: Use any email and password
-              </p>
+            <div className="text-center space-y-2">
+              <p className="text-sm text-neutral-600 font-medium">Demo Accounts:</p>
+              <div className="space-y-1 text-xs text-neutral-500">
+                <p><strong>Admin:</strong> admin@example.com / password</p>
+                <p><strong>Employee:</strong> employee@example.com / password</p>
+              </div>
             </div>
           </form>
         </Card>

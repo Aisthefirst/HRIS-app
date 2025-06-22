@@ -6,6 +6,7 @@ import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { api } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 
 interface TimeOffRequestModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ const timeOffTypes = [
 
 export const TimeOffRequestModal: React.FC<TimeOffRequestModalProps> = ({ open, onClose }) => {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [formData, setFormData] = useState({
     startDate: '',
     endDate: '',
@@ -32,14 +34,26 @@ export const TimeOffRequestModal: React.FC<TimeOffRequestModalProps> = ({ open, 
 
   const createRequestMutation = useMutation({
     mutationFn: api.createTimeOffRequest,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['time-off-requests'] });
+      addToast({
+        type: 'success',
+        title: 'Time Off Request Submitted',
+        message: `Your ${data.type} request for ${data.days} day(s) has been submitted for approval.`,
+      });
       onClose();
       setFormData({
         startDate: '',
         endDate: '',
         type: 'vacation',
         reason: ''
+      });
+    },
+    onError: (error: any) => {
+      addToast({
+        type: 'error',
+        title: 'Error Submitting Request',
+        message: error.message || 'Failed to submit time off request. Please try again.',
       });
     }
   });
