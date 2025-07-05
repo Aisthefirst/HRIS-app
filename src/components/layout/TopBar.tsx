@@ -1,46 +1,39 @@
 import React, { useState } from 'react';
 import { Bell, Search, Menu, User, LogOut } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import { useClickAway } from '../../hooks/useClickAway';
+import { api } from '../../services/api';
 import { Button } from '../ui/Button';
 
 interface TopBarProps {
   onMenuClick?: () => void;
 }
 
-const mockNotifications = [
-  {
-    id: '1',
-    title: 'New time-off request',
-    message: 'Sarah Johnson requested 3 days off',
-    time: '5 minutes ago',
-    unread: true
-  },
-  {
-    id: '2',
-    title: 'Employee onboarded',
-    message: 'Michael Chen has completed onboarding',
-    time: '1 hour ago',
-    unread: true
-  },
-  {
-    id: '3',
-    title: 'Performance review due',
-    message: 'Emily Rodriguez review is due tomorrow',
-    time: '2 hours ago',
-    unread: false
-  }
-];
-
 export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: api.getNotifications,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
   const notificationRef = useClickAway<HTMLDivElement>(() => setShowNotifications(false));
   const profileRef = useClickAway<HTMLDivElement>(() => setShowProfileMenu(false));
 
-  const unreadCount = mockNotifications.filter(n => n.unread).length;
+  const unreadCount = notifications.filter((n: any) => !n.read_at).length;
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await api.markNotificationAsRead(notificationId);
+      // Refetch notifications after marking as read
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-neutral-200 h-16">
@@ -78,7 +71,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
               icon={<Bell className="h-5 w-5" />}
             >
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full pointer-events-none"></span>
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
               )}
             </Button>
 
@@ -89,37 +84,49 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
                   <h3 className="text-sm font-semibold text-neutral-900">Notifications</h3>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
-                  {mockNotifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-4 border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer ${
-                        notification.unread ? 'bg-primary-50' : ''
-                      }`}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className={`w-2 h-2 rounded-full mt-2 ${
-                          notification.unread ? 'bg-primary-500' : 'bg-transparent'
-                        }`} />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-neutral-900">
-                            {notification.title}
-                          </p>
-                          <p className="text-sm text-neutral-600 mt-1">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-neutral-500 mt-1">
-                            {notification.time}
-                          </p>
+                  {notifications.length > 0 ? (
+                    notifications.map((notification: any) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer ${
+                          !notification.read_at ? 'bg-primary-50' : ''
+                        }`}
+                        onClick={() => handleMarkAsRead(notification.id)}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-2 h-2 rounded-full mt-2 ${
+                            !notification.read_at ? 'bg-primary-500' : 'bg-transparent'
+                          }`} />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-neutral-900">
+                              {notification.title}
+                            </p>
+                            <p className="text-sm text-neutral-600 mt-1">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-neutral-500 mt-1">
+                              {new Date(notification.created_at).toLocaleString()}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-neutral-500">
+                      No notifications
                     </div>
-                  ))}
+                  )}
                 </div>
-                <div className="p-3 border-t border-neutral-200">
-                  <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                    View all notifications
-                  </button>
-                </div>
+                {notifications.length > 0 && (
+                  <div className="p-3 border-t border-neutral-200">
+                    <button 
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                      onClick={() => api.markAllNotificationsAsRead()}
+                    >
+                      Mark all as read
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -138,7 +145,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
                 />
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-neutral-900">{user?.name}</p>
-                  <p className="text-xs text-neutral-500">{user?.role}</p>
+                  <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
                 </div>
               </button>
             </div>
@@ -151,7 +158,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
                     className="flex items-center w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 rounded-lg transition-colors"
                     onClick={() => {
                       setShowProfileMenu(false);
-                      // Navigate to profile page
+                      window.location.href = '/profile';
                     }}
                   >
                     <User className="h-4 w-4 mr-3" />

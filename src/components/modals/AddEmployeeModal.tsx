@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { api } from '../../services/api';
+import { useToast } from '../../hooks/useToast';
 
 interface AddEmployeeModalProps {
   open: boolean;
@@ -43,11 +44,17 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ open, onClos
   });
 
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
 
   const createEmployeeMutation = useMutation({
     mutationFn: api.createEmployee,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      addToast({
+        type: 'success',
+        title: 'Employee Added',
+        message: `${data.firstName} ${data.lastName} has been successfully added to the system.`,
+      });
       onClose();
       setFormData({
         firstName: '',
@@ -57,6 +64,13 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ open, onClos
         department: '',
         hireDate: '',
         salary: ''
+      });
+    },
+    onError: (error: any) => {
+      addToast({
+        type: 'error',
+        title: 'Error Adding Employee',
+        message: error.message || 'Failed to add employee. Please try again.',
       });
     }
   });
