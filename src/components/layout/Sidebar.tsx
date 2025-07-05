@@ -5,8 +5,6 @@ import {
   Users, 
   Calendar, 
   Settings, 
-  LogOut,
-  Building2,
   Briefcase
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,7 +19,7 @@ const navigation = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
 
   const isAdmin = user?.role === 'admin';
@@ -31,8 +29,8 @@ export const Sidebar: React.FC = () => {
       {/* Logo */}
       <div className="flex items-center h-16 px-6 border-b border-neutral-200">
         <div className="flex items-center">
-          <Building2 className="h-8 w-8 text-primary-600" />
-          <span className="ml-2 text-xl font-semibold text-neutral-900">HRIS</span>
+          <img src='/assets/otb-icon.png' width={40} height={40} alt="logo" />
+          <span className="ml-2 text-xl font-semibold text-neutral-900">OTB-HRIS</span>
         </div>
       </div>
 
@@ -72,13 +70,14 @@ export const Sidebar: React.FC = () => {
 
       {/* Logout */}
       <div className="p-4 border-t border-neutral-200">
-        <button
+        <span className="mr-3 h-5 w-5 text-xs font-semibold text-neutral-600">© Copyright 2025 - Omah Tegal Bisma </span>
+        {/* <button
           onClick={logout}
           className="group flex items-center w-full px-3 py-2 text-sm font-medium text-neutral-600 rounded-lg hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
         >
           <LogOut className="mr-3 h-5 w-5 text-neutral-400 group-hover:text-neutral-600" />
           Sign Out
-        </button>
+        </button> */}
       </div>
     </div>
   );

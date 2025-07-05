@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Building2, Mail, Lock } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
+// import logo from '.../assets/otb-icon.png';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+
   
   const { login, isAuthenticated } = useAuth();
   const location = useLocation();
@@ -43,9 +46,11 @@ export const LoginPage: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center">
-            <Building2 className="h-12 w-12 text-primary-600" />
+            {/* <Building2 className="h-12 w-12 text-primary-600" /> */}
+            {/* <img src={logo} alt="logo" /> */}
+            <img src='/assets/otb-icon.png' width={150} height={150} alt="logo" />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-neutral-900">
+          <h2 className="mt-3 text-3xl font-bold text-neutral-900">
             Sign in to HRIS
           </h2>
           <p className="mt-2 text-sm text-neutral-600">
