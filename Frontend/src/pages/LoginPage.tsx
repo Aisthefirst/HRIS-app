@@ -12,8 +12,6 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   
-
-  
   const { login, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
   

@@ -32,8 +32,9 @@ export const Sidebar: React.FC = () => {
       {/* Logo */}
       <div className="flex items-center h-16 px-6 border-b border-neutral-200">
         <div className="flex items-center">
-          <Building2 className="h-8 w-8 text-primary-600" />
-          <span className="ml-2 text-xl font-semibold text-neutral-900">HRIS</span>
+          <img src='/assets/otb-icon.png' width={40} height={40} alt="logo" />
+          {/* <Building2 className="h-8 w-8 text-primary-600" /> */}
+          <span className="ml-2 text-xl font-semibold text-neutral-900">OTB - HRIS</span>
         </div>
       </div>
 
