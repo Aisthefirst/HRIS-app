@@ -1,4 +1,4 @@
-# HRIS Dashboard - Standalone Frontend
+# HRIS Dashboard
 
 A modern Human Resources Information System (HRIS) dashboard built with React and TypeScript. This is a standalone frontend application with mock data for demonstration purposes.
 
