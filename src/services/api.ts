@@ -1,170 +1,94 @@
 import { Employee, TimeOffRequest, KPIData, Department, Application, User } from '../types';
+import { allEmployees, mockTimeOffRequests, mockKPIData, mockDepartments, mockApplications } from '../data/mockData';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// Mock delay to simulate API calls
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Auth token management
+// Mock users for authentication
+const mockUsers = [
+  {
+    id: '1',
+    email: 'admin@example.com',
+    name: 'Admin User',
+    role: 'admin' as const,
+    avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150'
+  },
+  {
+    id: '2',
+    email: 'employee@example.com',
+    name: 'Employee User',
+    role: 'employee' as const,
+    avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150'
+  }
+];
+
+// Mock storage for data
+let employees = [...allEmployees];
+let timeOffRequests = [...mockTimeOffRequests];
+let applications = [...mockApplications];
+let notifications: any[] = [
+  {
+    id: '1',
+    title: 'New Time Off Request',
+    message: 'Sarah Johnson has requested 5 days of vacation leave.',
+    read_at: null,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '2',
+    title: 'Employee Added',
+    message: 'New employee Michael Chen has been added to the system.',
+    read_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 86400000).toISOString()
+  }
+];
+
+// Auth token management (localStorage)
 const getAuthToken = (): string | null => {
-  return localStorage.getItem(import.meta.env.VITE_AUTH_TOKEN_KEY || 'hris_auth_token');
+  return localStorage.getItem('hris_auth_token');
 };
 
 const setAuthToken = (token: string): void => {
-  localStorage.setItem(import.meta.env.VITE_AUTH_TOKEN_KEY || 'hris_auth_token', token);
+  localStorage.setItem('hris_auth_token', token);
 };
 
 const removeAuthToken = (): void => {
-  localStorage.removeItem(import.meta.env.VITE_AUTH_TOKEN_KEY || 'hris_auth_token');
+  localStorage.removeItem('hris_auth_token');
 };
 
-// HTTP client with auth headers
-const apiClient = {
-  get: async (endpoint: string) => {
-    const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-    });
-    
-    if (!response.ok) {
-      if (response.status === 401) {
-        removeAuthToken();
-        window.location.href = '/login';
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return response.json();
-  },
-
-  post: async (endpoint: string, data: any) => {
-    const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-      body: JSON.stringify(data),
-    });
-    
-    if (!response.ok) {
-      if (response.status === 401) {
-        removeAuthToken();
-        window.location.href = '/login';
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return response.json();
-  },
-
-  put: async (endpoint: string, data: any) => {
-    const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-      body: JSON.stringify(data),
-    });
-    
-    if (!response.ok) {
-      if (response.status === 401) {
-        removeAuthToken();
-        window.location.href = '/login';
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return response.json();
-  },
-
-  patch: async (endpoint: string, data: any) => {
-    const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-      body: JSON.stringify(data),
-    });
-    
-    if (!response.ok) {
-      if (response.status === 401) {
-        removeAuthToken();
-        window.location.href = '/login';
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return response.json();
-  },
-
-  delete: async (endpoint: string) => {
-    const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-    });
-    
-    if (!response.ok) {
-      if (response.status === 401) {
-        removeAuthToken();
-        window.location.href = '/login';
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return response.json();
-  },
-};
+// Current user storage
+let currentUser: User | null = null;
 
 export const api = {
   // Authentication endpoints
   login: async (email: string, password: string): Promise<{ user: User; token: string }> => {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    await delay(1000); // Simulate network delay
     
-    if (!response.ok) {
+    const user = mockUsers.find(u => u.email === email);
+    if (!user || password !== 'password') {
       throw new Error('Invalid credentials');
     }
     
-    const data = await response.json();
-    setAuthToken(data.token);
-    return data;
+    const token = `mock-token-${Date.now()}`;
+    currentUser = user;
+    setAuthToken(token);
+    
+    return { user, token };
   },
 
   logout: async (): Promise<void> => {
-    try {
-      await apiClient.post('/auth/logout', {});
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      removeAuthToken();
-    }
+    await delay(500);
+    currentUser = null;
+    removeAuthToken();
   },
 
   getCurrentUser: async (): Promise<User> => {
-    const data = await apiClient.get('/auth/profile');
-    return data.user;
+    await delay(300);
+    const token = getAuthToken();
+    if (!token || !currentUser) {
+      throw new Error('Not authenticated');
+    }
+    return currentUser;
   },
 
   // Employee endpoints
@@ -175,99 +99,203 @@ export const api = {
     department?: string;
     status?: string;
   }): Promise<{ employees: Employee[]; total: number; current_page: number; last_page: number }> => {
-    const queryParams = new URLSearchParams();
+    await delay(800);
     
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('per_page', params.limit.toString());
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.department && params.department !== 'all') queryParams.append('department', params.department);
-    if (params?.status && params.status !== 'all') queryParams.append('status', params.status);
+    let filteredEmployees = [...employees];
     
-    const endpoint = `/employees${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    const data = await apiClient.get(endpoint);
+    // Apply filters
+    if (params?.search) {
+      const search = params.search.toLowerCase();
+      filteredEmployees = filteredEmployees.filter(emp => 
+        emp.firstName.toLowerCase().includes(search) ||
+        emp.lastName.toLowerCase().includes(search) ||
+        emp.email.toLowerCase().includes(search) ||
+        emp.jobTitle.toLowerCase().includes(search)
+      );
+    }
+    
+    if (params?.department && params.department !== 'all') {
+      filteredEmployees = filteredEmployees.filter(emp => emp.department === params.department);
+    }
+    
+    if (params?.status && params.status !== 'all') {
+      filteredEmployees = filteredEmployees.filter(emp => emp.status === params.status);
+    }
+    
+    // Apply pagination
+    const page = params?.page || 1;
+    const limit = params?.limit || 10;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
     
     return {
-      employees: data.data,
-      total: data.total,
-      current_page: data.current_page,
-      last_page: data.last_page,
+      employees: paginatedEmployees,
+      total: filteredEmployees.length,
+      current_page: page,
+      last_page: Math.ceil(filteredEmployees.length / limit)
     };
   },
 
   getEmployee: async (id: string): Promise<Employee> => {
-    const data = await apiClient.get(`/employees/${id}`);
-    return data.data;
+    await delay(500);
+    const employee = employees.find(emp => emp.id === id);
+    if (!employee) {
+      throw new Error('Employee not found');
+    }
+    return employee;
   },
 
-  createEmployee: async (employee: Omit<Employee, 'id'>): Promise<Employee> => {
-    const data = await apiClient.post('/employees', employee);
-    return data.data;
+  createEmployee: async (employeeData: Omit<Employee, 'id'>): Promise<Employee> => {
+    await delay(1000);
+    
+    const newEmployee: Employee = {
+      ...employeeData,
+      id: (employees.length + 1).toString()
+    };
+    
+    employees.push(newEmployee);
+    return newEmployee;
   },
 
   updateEmployee: async (id: string, updates: Partial<Employee>): Promise<Employee> => {
-    const data = await apiClient.put(`/employees/${id}`, updates);
-    return data.data;
+    await delay(800);
+    
+    const index = employees.findIndex(emp => emp.id === id);
+    if (index === -1) {
+      throw new Error('Employee not found');
+    }
+    
+    employees[index] = { ...employees[index], ...updates };
+    return employees[index];
   },
 
   deleteEmployee: async (id: string): Promise<void> => {
-    await apiClient.delete(`/employees/${id}`);
+    await delay(500);
+    
+    const index = employees.findIndex(emp => emp.id === id);
+    if (index === -1) {
+      throw new Error('Employee not found');
+    }
+    
+    employees.splice(index, 1);
   },
 
   // Time-off endpoints
   getTimeOffRequests: async (): Promise<TimeOffRequest[]> => {
-    const data = await apiClient.get('/timeoff-requests');
-    return data.data;
+    await delay(600);
+    return [...timeOffRequests];
   },
 
   createTimeOffRequest: async (request: Omit<TimeOffRequest, 'id' | 'submittedAt'>): Promise<TimeOffRequest> => {
-    const data = await apiClient.post('/timeoff-requests', request);
-    return data.data;
+    await delay(800);
+    
+    const newRequest: TimeOffRequest = {
+      ...request,
+      id: (timeOffRequests.length + 1).toString(),
+      submittedAt: new Date().toISOString()
+    };
+    
+    timeOffRequests.push(newRequest);
+    
+    // Add notification
+    notifications.unshift({
+      id: (notifications.length + 1).toString(),
+      title: 'New Time Off Request',
+      message: `${request.employeeName} has requested ${request.days} day(s) of ${request.type} leave.`,
+      read_at: null,
+      created_at: new Date().toISOString()
+    });
+    
+    return newRequest;
   },
 
   approveTimeOffRequest: async (id: string): Promise<TimeOffRequest> => {
-    const data = await apiClient.patch(`/timeoff-requests/${id}/approve`, {});
-    return data.data;
+    await delay(600);
+    
+    const index = timeOffRequests.findIndex(req => req.id === id);
+    if (index === -1) {
+      throw new Error('Request not found');
+    }
+    
+    timeOffRequests[index] = {
+      ...timeOffRequests[index],
+      status: 'approved',
+      approvedBy: currentUser?.name || 'Admin'
+    };
+    
+    return timeOffRequests[index];
   },
 
   rejectTimeOffRequest: async (id: string, reason?: string): Promise<TimeOffRequest> => {
-    const data = await apiClient.patch(`/timeoff-requests/${id}/reject`, { reason });
-    return data.data;
+    await delay(600);
+    
+    const index = timeOffRequests.findIndex(req => req.id === id);
+    if (index === -1) {
+      throw new Error('Request not found');
+    }
+    
+    timeOffRequests[index] = {
+      ...timeOffRequests[index],
+      status: 'rejected'
+    };
+    
+    return timeOffRequests[index];
   },
 
   // Notification endpoints
   getNotifications: async (): Promise<any[]> => {
-    const data = await apiClient.get('/notifications');
-    return data.data;
+    await delay(400);
+    return [...notifications];
   },
 
   markNotificationAsRead: async (id: string): Promise<void> => {
-    await apiClient.patch(`/notifications/${id}/read`, {});
+    await delay(300);
+    const index = notifications.findIndex(notif => notif.id === id);
+    if (index !== -1) {
+      notifications[index].read_at = new Date().toISOString();
+    }
   },
 
   markAllNotificationsAsRead: async (): Promise<void> => {
-    await apiClient.patch('/notifications/read-all', {});
+    await delay(500);
+    notifications.forEach(notif => {
+      if (!notif.read_at) {
+        notif.read_at = new Date().toISOString();
+      }
+    });
   },
 
   // Application endpoints
   getApplications: async (): Promise<Application[]> => {
-    const data = await apiClient.get('/applications');
-    return data.data;
+    await delay(700);
+    return [...applications];
   },
 
   updateApplicationStatus: async (id: string, status: Application['status']): Promise<Application> => {
-    const data = await apiClient.patch(`/applications/${id}/status`, { status });
-    return data.data;
+    await delay(600);
+    
+    const index = applications.findIndex(app => app.id === id);
+    if (index === -1) {
+      throw new Error('Application not found');
+    }
+    
+    applications[index] = { ...applications[index], status };
+    return applications[index];
   },
 
   // Dashboard endpoints
   getKPIData: async (): Promise<KPIData> => {
-    const data = await apiClient.get('/dashboard/kpi');
-    return data.data;
+    await delay(500);
+    return {
+      ...mockKPIData,
+      totalEmployees: employees.length
+    };
   },
 
   getDepartments: async (): Promise<Department[]> => {
-    const data = await apiClient.get('/departments');
-    return data.data;
+    await delay(400);
+    return [...mockDepartments];
   },
 };
 
